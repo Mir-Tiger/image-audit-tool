@@ -2,83 +2,555 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>批量图片预览</title>
+<title>批量素材预览</title>
 <style>
+  * {
+    box-sizing: border-box;
+  }
+
   body {
     font-family: Arial, "Microsoft YaHei", sans-serif;
     padding: 20px;
     background: #f5f5f5;
+    color: #222;
   }
+
+  h2 {
+    margin-top: 0;
+  }
+
   textarea {
     width: 100%;
     height: 180px;
     margin-bottom: 12px;
     font-size: 14px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    resize: vertical;
   }
+
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
   button {
     padding: 8px 14px;
     cursor: pointer;
-    margin-bottom: 16px;
+    border: 1px solid #bbb;
+    background: #fff;
+    border-radius: 6px;
   }
+
+  button:hover {
+    background: #f0f0f0;
+  }
+
+  .primary {
+    background: #1677ff;
+    color: #fff;
+    border-color: #1677ff;
+  }
+
+  .primary:hover {
+    background: #0958d9;
+  }
+
+  .summary {
+    font-size: 13px;
+    color: #666;
+  }
+
   .grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 12px;
   }
+
   .card {
     background: #fff;
     border: 1px solid #ddd;
     padding: 8px;
-    border-radius: 6px;
+    border-radius: 8px;
+    min-width: 0;
   }
-  img {
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    margin-bottom: 6px;
+    color: #555;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: #eee;
+    color: #555;
+    font-size: 12px;
+  }
+
+  .tag.image {
+    background: #e6f4ff;
+    color: #0958d9;
+  }
+
+  .tag.audio {
+    background: #f6ffed;
+    color: #389e0d;
+  }
+
+  .tag.text {
+    background: #fff7e6;
+    color: #d46b08;
+  }
+
+  .tag.unknown {
+    background: #f5f5f5;
+    color: #777;
+  }
+
+  .preview-box {
     width: 100%;
     height: 180px;
-    object-fit: contain;
     background: #eee;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .preview-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    cursor: zoom-in;
+  }
+
+  .audio-box {
+    width: 100%;
+    padding: 16px 10px;
+    text-align: center;
+  }
+
+  .audio-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+
+  audio {
+    width: 100%;
+  }
+
+  .text-box {
+    width: 100%;
+    height: 180px;
+    overflow: auto;
+    background: #1f1f1f;
+    color: #eee;
+    padding: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
     cursor: pointer;
   }
+
+  .unknown-box {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+  }
+
   .url {
     font-size: 12px;
     word-break: break-all;
     margin-top: 6px;
+    color: #666;
+  }
+
+  .actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .small-btn {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+
+  /* Modal */
+  .modal-mask {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+  }
+
+  .modal-mask.show {
+    display: flex;
+  }
+
+  .modal-content {
+    position: relative;
+    max-width: 96vw;
+    max-height: 92vh;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-header {
+    height: 44px;
+    padding: 0 12px;
+    background: #111;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .modal-title {
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .modal-close {
+    background: transparent;
+    color: #fff;
+    border: none;
+    font-size: 22px;
+    padding: 0 8px;
+    cursor: pointer;
+  }
+
+  .modal-body {
+    max-width: 96vw;
+    max-height: calc(92vh - 44px);
+    overflow: auto;
+    background: #222;
+  }
+
+  .modal-body img {
+    display: block;
+    max-width: 96vw;
+    max-height: calc(92vh - 44px);
+    object-fit: contain;
+  }
+
+  .modal-text {
+    width: 80vw;
+    max-width: 1000px;
+    height: 70vh;
+    overflow: auto;
+    background: #1f1f1f;
+    color: #eee;
+    padding: 16px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  @media (max-width: 1200px) {
+    .grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    body {
+      padding: 12px;
+    }
+
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .preview-box {
+      height: 140px;
+    }
   }
 </style>
 </head>
 <body>
 
-<h2>批量图片预览</h2>
+<h2>批量素材预览</h2>
 
-<textarea id="urlInput" placeholder="每行粘贴一个图片URL"></textarea>
-<br>
-<button onclick="renderImages()">展示图片</button>
+<textarea id="urlInput" placeholder="每行粘贴一个素材 URL，支持图片 / 音频 / 文本"></textarea>
+
+<div class="toolbar">
+  <button class="primary" onclick="renderFiles()">展示素材</button>
+  <button onclick="clearAll()">清空</button>
+  <span class="summary" id="summary">支持：图片、语音/音频、文本文件</span>
+</div>
 
 <div class="grid" id="grid"></div>
 
+<!-- Modal -->
+<div class="modal-mask" id="modalMask" onclick="closeModalOnMask(event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">预览</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
 <script>
-function renderImages() {
-  const input = document.getElementById('urlInput').value;
-  const urls = input
+const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif'];
+const AUDIO_EXTS = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac', 'webm'];
+const TEXT_EXTS = ['txt', 'json', 'csv', 'log', 'md', 'html', 'htm', 'xml', 'yaml', 'yml', 'js', 'ts', 'css'];
+
+function getCleanUrl(url) {
+  return url.split('?')[0].split('#')[0];
+}
+
+function getExt(url) {
+  const clean = getCleanUrl(url);
+  const match = clean.match(/\.([a-zA-Z0-9]+)$/);
+  return match ? match[1].toLowerCase() : '';
+}
+
+function getType(url) {
+  const ext = getExt(url);
+
+  if (IMAGE_EXTS.includes(ext)) return 'image';
+  if (AUDIO_EXTS.includes(ext)) return 'audio';
+  if (TEXT_EXTS.includes(ext)) return 'text';
+
+  return 'unknown';
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function parseUrls(input) {
+  return input
     .split(/\n|,|\t/)
     .map(x => x.trim())
     .filter(x => x.startsWith('http'));
+}
+
+function renderFiles() {
+  const input = document.getElementById('urlInput').value;
+  const urls = parseUrls(input);
 
   const grid = document.getElementById('grid');
+  const summary = document.getElementById('summary');
+
   grid.innerHTML = '';
+  summary.textContent = `共识别 ${urls.length} 个素材`;
 
   urls.forEach((url, index) => {
+    const type = getType(url);
     const card = document.createElement('div');
     card.className = 'card';
 
+    const safeUrl = escapeHtml(url);
+
     card.innerHTML = `
-      <div>序号：${index + 1}</div>
-      <img src="${url}" loading="lazy" onclick="window.open('${url}', '_blank')" onerror="this.alt='加载失败'">
-      <div class="url">${url}</div>
+      <div class="card-header">
+        <span>序号：${index + 1}</span>
+        <span class="tag ${type}">${type.toUpperCase()}</span>
+      </div>
+      ${renderPreviewHtml(url, type)}
+      <div class="url">${safeUrl}</div>
+      <div class="actions">
+        <button class="small-btn" onclick="copyText('${encodeURIComponent(url)}')">复制链接</button>
+        <button class="small-btn" onclick="window.open('${safeUrl}', '_blank')">打开链接</button>
+      </div>
     `;
 
     grid.appendChild(card);
+
+    if (type === 'text') {
+      loadTextPreview(url, index);
+    }
   });
 }
+
+function renderPreviewHtml(url, type) {
+  const safeUrl = escapeHtml(url);
+  const encodedUrl = encodeURIComponent(url);
+
+  if (type === 'image') {
+    return `
+      <div class="preview-box">
+        <img 
+          src="${safeUrl}" 
+          loading="lazy" 
+          onclick="openImageModal('${encodedUrl}')"
+          onerror="this.alt='加载失败'; this.style.padding='20px';"
+        >
+      </div>
+    `;
+  }
+
+  if (type === 'audio') {
+    return `
+      <div class="preview-box">
+        <div class="audio-box">
+          <div class="audio-icon">🎧</div>
+          <audio controls preload="none" src="${safeUrl}"></audio>
+        </div>
+      </div>
+    `;
+  }
+
+  if (type === 'text') {
+    return `
+      <div 
+        class="text-box" 
+        id="text-preview-${window.currentTextIndex = (window.currentTextIndex || 0) + 1}"
+        data-url="${safeUrl}"
+        onclick="openTextModal('${encodedUrl}')"
+      >文本加载中...</div>
+    `;
+  }
+
+  return `
+    <div class="preview-box">
+      <div class="unknown-box">
+        <div style="font-size: 34px; margin-bottom: 10px;">📄</div>
+        <div>暂不支持预览</div>
+      </div>
+    </div>
+  `;
+}
+
+function loadTextPreview(url, index) {
+  const boxes = document.querySelectorAll('.text-box');
+  const box = boxes[index];
+
+  if (!box) return;
+
+  fetch(url)
+    .then(res => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    })
+    .then(text => {
+      box.textContent = text.slice(0, 1200) || '空文本';
+    })
+    .catch(err => {
+      box.textContent = '文本加载失败：可能存在跨域限制 CORS，或链接不可访问。';
+    });
+}
+
+function openImageModal(encodedUrl) {
+  const url = decodeURIComponent(encodedUrl);
+  const modalMask = document.getElementById('modalMask');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalBody = document.getElementById('modalBody');
+
+  modalTitle.textContent = url;
+  modalBody.innerHTML = `<img src="${escapeHtml(url)}" alt="大图预览">`;
+
+  modalMask.classList.add('show');
+}
+
+function openTextModal(encodedUrl) {
+  const url = decodeURIComponent(encodedUrl);
+  const modalMask = document.getElementById('modalMask');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalBody = document.getElementById('modalBody');
+
+  modalTitle.textContent = url;
+  modalBody.innerHTML = `<div class="modal-text">文本加载中...</div>`;
+
+  modalMask.classList.add('show');
+
+  fetch(url)
+    .then(res => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    })
+    .then(text => {
+      const textBox = modalBody.querySelector('.modal-text');
+      textBox.textContent = text || '空文本';
+    })
+    .catch(err => {
+      const textBox = modalBody.querySelector('.modal-text');
+      textBox.textContent = '文本加载失败：可能存在跨域限制 CORS，或链接不可访问。';
+    });
+}
+
+function closeModal() {
+  const modalMask = document.getElementById('modalMask');
+  const modalBody = document.getElementById('modalBody');
+
+  modalMask.classList.remove('show');
+  modalBody.innerHTML = '';
+}
+
+function closeModalOnMask(event) {
+  if (event.target.id === 'modalMask') {
+    closeModal();
+  }
+}
+
+function copyText(encodedText) {
+  const text = decodeURIComponent(encodedText);
+
+  navigator.clipboard.writeText(text)
+    .then(() => {
+      alert('已复制链接');
+    })
+    .catch(() => {
+      const input = document.createElement('textarea');
+      input.value = text;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      alert('已复制链接');
+    });
+}
+
+function clearAll() {
+  document.getElementById('urlInput').value = '';
+  document.getElementById('grid').innerHTML = '';
+  document.getElementById('summary').textContent = '支持：图片、语音/音频、文本文件';
+}
+
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    closeModal();
+  }
+});
 </script>
 
 </body>
